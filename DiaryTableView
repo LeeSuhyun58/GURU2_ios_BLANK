@@ -1,0 +1,99 @@
+import UIKit
+import CoreData
+
+var diaryList = [Diary]()
+
+class DiaryTableView: UITableViewController
+{
+    var firstLoad = true
+    
+    func nonDeletedDiary() -> [Diary]
+    {
+        var noDeleteDiaryList = [Diary]()
+        for diary in diaryList{
+            if(diary.deletedDate == nil){
+                noDeleteDiaryList.append(diary)
+            }
+        }
+        return noDeleteDiaryList
+    }
+    
+    /*func nonDeletedDiary() -> [Diary]
+    {
+        var noDeleteDiaryList = [Diary]()
+        for diary in DiaryList{
+            if(diary.deletedDate == nil){
+                noDeleteDiaryList.append(diary)
+            }
+        }
+        return noDeleteDiaryList
+    }*/
+    override func viewDidLoad() {
+        if(firstLoad){
+            firstLoad = false
+            let appDelegate = UIApplication.shared.delegate as! AppDelegate
+            let context: NSManagedObjectContext = appDelegate.persistentContainer.viewContext
+            let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Diary")
+            do{
+                let results:NSArray = try context.fetch(request) as NSArray
+                for result in results{
+                    let diary = result as! Diary
+                    diaryList.append(diary)
+                }
+            }catch{
+                print("Fetch Failed")
+            }
+        }
+    }
+    
+    
+    
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath ) -> UITableViewCell {
+        let diaryCell = tableView.dequeueReusableCell(withIdentifier: "diaryCellID", for: indexPath) as! DiaryCell
+        let thisDiary: Diary!
+        thisDiary = nonDeletedDiary()[indexPath.row]
+        
+        diaryCell.titleLabel.text = thisDiary.title
+        diaryCell.descLabel.text = thisDiary.desc
+        
+        return diaryCell
+    }
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return nonDeletedDiary().count
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        tableView.reloadData()
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.performSegue(withIdentifier: "editDiary", sender: self)
+    }
+    
+    
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if(segue.identifier == "editDiary"){
+            let indexPath = tableView.indexPathForSelectedRow!
+        
+            let diaryDetail = segue.destination as? DiaryView
+            
+            let selectedDiary : Diary!
+            selectedDiary = nonDeletedDiary()[indexPath.row]
+            diaryDetail!.selectedDiary = selectedDiary
+            
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+    }
+    
+    /*override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath){
+        if editingStyle == UITableViewCell.EditingStyle.delete{
+            diaryList.remove(at : indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: UITableView.RowAnimation.automatic)
+        }else if editingStyle == .insert{
+            
+        }
+    }*/
+}
